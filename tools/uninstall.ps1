@@ -1,8 +1,8 @@
-# Remielle Astral uninstaller for Windows (PowerShell 5.1 or 7).
+# Sunbringer Astral uninstaller for Windows (PowerShell 5.1 or 7).
 #
-#   irm https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/uninstall.ps1 | iex
-#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/uninstall.ps1))) -Purge
-#   Settings > Apps > Remielle Astral > Uninstall   (runs this file from the install folder)
+#   irm https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/uninstall.ps1 | iex
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/uninstall.ps1))) -Purge
+#   Settings > Apps > Sunbringer Astral > Uninstall   (runs this file from the install folder)
 #
 # By default only the program goes: its files (the release's MANIFEST), the
 # shortcuts, the Apps entry and the PATH entry.  settings.json, the Custom
@@ -10,12 +10,12 @@
 # so a later install carries on where this one stopped.
 #
 #   -Purge       remove those too.  settings.json, the saves and the save
-#                backups are packed into %USERPROFILE%\Remielle-Astral-backup-<date>.zip
+#                backups are packed into %USERPROFILE%\Sunbringer-Astral-backup-<date>.zip
 #                first; the mod library is only removed when you say so
 #   -WithMods    with -Purge: remove the mod library without asking
 #   -NoBackup    with -Purge: no archive
 #   -DryRun      show what would be removed and change nothing
-#   -Dir DIR     the install folder (default %LOCALAPPDATA%\Remielle-Astral)
+#   -Dir DIR     the install folder (default %LOCALAPPDATA%\Sunbringer-Astral)
 #   -Yes         answer every question with its default
 #
 # The game client and an Official server checkout live in folders of your
@@ -33,14 +33,14 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-$AppKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\RemielleAstral"
+$AppKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\SunbringerAstral"
 $LegacyFiles = @(
-    "remielle-astral.exe", "Remielle Astral.exe", "remielle-astral.exe.old", "Remielle Astral.exe.old", "README.md", "LICENSE", "icon.png", "MANIFEST", ".install-info",
+    "sunbringer-astral.exe", "Sunbringer Astral.exe", "sunbringer-astral.exe.old", "Sunbringer Astral.exe.old", "README.md", "LICENSE", "icon.png", "MANIFEST", ".install-info",
     "tools/remielle-update", "tools/build-official-patch", "tools/import-patch",
     "tools/install.sh", "tools/install.ps1", "tools/install.cmd",
     "tools/update.sh", "tools/update.ps1", "tools/update.cmd",
     "tools/uninstall.sh", "tools/uninstall.ps1", "tools/uninstall.cmd",
-    "patch/Pryce.exe", "patch/Armorer.dll"
+    "patch/sunbringer.exe", "patch/sunbringer.dll", "patch/Pryce.exe", "patch/Armorer.dll"
 )
 $ModParts = @("xxmi", "mods.json", "staging", "quarantine", "backups", "cache")
 $script:Thai = $false
@@ -141,7 +141,7 @@ function Get-ShortcutTarget([string]$Path) {
 function Invoke-Main {
     if (-not $Dir) {
         if (-not $env:LOCALAPPDATA) { Fail "LOCALAPPDATA is not set" }
-        $script:Dir = Join-Path $env:LOCALAPPDATA "Remielle-Astral"
+        $script:Dir = Join-Path $env:LOCALAPPDATA "Sunbringer-Astral"
     }
     try {
         $script:Dir = [IO.Path]::GetFullPath($Dir).TrimEnd('\', '/')
@@ -165,9 +165,9 @@ function Invoke-Main {
     $programs = [Environment]::GetFolderPath("Programs")
     $links = @()
     foreach ($folder in @($desktop, $userDesktop, $programs)) {
-        if ($folder -and (Test-Path -LiteralPath $folder)) { $links += (Join-Path $folder "Remielle Astral.lnk") }
+        if ($folder -and (Test-Path -LiteralPath $folder)) { $links += (Join-Path $folder "Sunbringer Astral.lnk") }
     }
-    $hasProgram = (Test-Path -LiteralPath (Join-Path $Dir "remielle-astral.exe")) -or (Test-Path -LiteralPath (Join-Path $Dir "Remielle Astral.exe")) -or
+    $hasProgram = (Test-Path -LiteralPath (Join-Path $Dir "sunbringer-astral.exe")) -or (Test-Path -LiteralPath (Join-Path $Dir "Sunbringer Astral.exe")) -or
         (Test-Path -LiteralPath (Join-Path $Dir "MANIFEST")) -or (Test-Path -LiteralPath (Join-Path $Dir ".install-info"))
     $hasApp = Test-Path -Path $AppKey
     $ourLinks = @($links | Where-Object {
@@ -176,20 +176,20 @@ function Invoke-Main {
         return ($tgt -and (Test-Inside $tgt))
     })
     if (-not $hasProgram -and -not $hasApp -and $ourLinks.Count -eq 0 -and (-not $Purge -or -not (Test-Path -LiteralPath $Dir))) {
-        Say (T "Remielle Astral is not installed in {0}." "\u0e44\u0e21\u0e48\u0e1e\u0e1a Remielle Astral \u0e43\u0e19 {0}" $Dir)
+        Say (T "Sunbringer Astral is not installed in {0}." "\u0e44\u0e21\u0e48\u0e1e\u0e1a Sunbringer Astral \u0e43\u0e19 {0}" $Dir)
         return
     }
     if ((Test-Path -LiteralPath $Dir) -and -not $hasProgram -and -not (Test-Path -LiteralPath $settings) -and -not (Test-Path -LiteralPath (Join-Path $Dir "xxmi"))) {
-        Fail (T "{0} does not look like a Remielle Astral folder; nothing was removed." "{0} \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e42\u0e1f\u0e25\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e02\u0e2d\u0e07 Remielle Astral \u0e08\u0e36\u0e07\u0e44\u0e21\u0e48\u0e25\u0e1a\u0e2d\u0e30\u0e44\u0e23" $Dir)
+        Fail (T "{0} does not look like a Sunbringer Astral folder; nothing was removed." "{0} \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e42\u0e1f\u0e25\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e02\u0e2d\u0e07 Sunbringer Astral \u0e08\u0e36\u0e07\u0e44\u0e21\u0e48\u0e25\u0e1a\u0e2d\u0e30\u0e44\u0e23" $Dir)
     }
 
-    $mutex = New-Object Threading.Mutex($false, "Local\RemielleAstral_Installer_Lock")
+    $mutex = New-Object Threading.Mutex($false, "Local\SunbringerAstral_Installer_Lock")
     $owned = $false
     try { $owned = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
-    if (-not $owned) { Fail (T "Another install or uninstall of Remielle Astral is running." "\u0e21\u0e35\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Remielle Astral \u0e17\u0e33\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27") }
+    if (-not $owned) { Fail (T "Another install or uninstall of Sunbringer Astral is running." "\u0e21\u0e35\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Sunbringer Astral \u0e17\u0e33\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27") }
     try {
         # ---- the plan
-        Say ((T "Uninstalling Remielle Astral" "\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Remielle Astral") + " ($Dir)")
+        Say ((T "Uninstalling Sunbringer Astral" "\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Sunbringer Astral") + " ($Dir)")
         if ($DryRun) { Note (T "dry run: nothing is changed" "\u0e17\u0e14\u0e25\u0e2d\u0e07\u0e14\u0e39: \u0e44\u0e21\u0e48\u0e21\u0e35\u0e2d\u0e30\u0e44\u0e23\u0e16\u0e39\u0e01\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19") }
         $fate = if ($Purge) { T "removed" "\u0e25\u0e1a" } else { T "kept" "\u0e40\u0e01\u0e47\u0e1a\u0e44\u0e27\u0e49" }
         $parts = @(
@@ -213,7 +213,7 @@ function Invoke-Main {
             }
         }
 
-        $question = if ($Purge) { T "Remove Remielle Astral and its data?" "\u0e25\u0e1a Remielle Astral \u0e41\u0e25\u0e30\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e44\u0e2b\u0e21?" } else { T "Remove the program (your data stays)?" "\u0e25\u0e1a\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 (\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e22\u0e31\u0e07\u0e2d\u0e22\u0e39\u0e48) \u0e44\u0e2b\u0e21?" }
+        $question = if ($Purge) { T "Remove Sunbringer Astral and its data?" "\u0e25\u0e1a Sunbringer Astral \u0e41\u0e25\u0e30\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e44\u0e2b\u0e21?" } else { T "Remove the program (your data stays)?" "\u0e25\u0e1a\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 (\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e22\u0e31\u0e07\u0e2d\u0e22\u0e39\u0e48) \u0e44\u0e2b\u0e21?" }
         if (-not (Ask $question $true)) { Ok (T "Cancelled." "\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e41\u0e25\u0e49\u0e27"); return }
         $dropMods = $false
         if ($Purge -and $modsHere.Count -gt 0) {
@@ -222,8 +222,11 @@ function Invoke-Main {
 
         # ---- close what runs from here
         $server = Join-Path $Dir "remielle-server"
-        $launchers = @(Get-ProcessesUnder $Dir | Where-Object { -not (Test-Path -LiteralPath $server) -or -not $_.Path.StartsWith($server, [StringComparison]::OrdinalIgnoreCase) })
-        Stop-Processes "Remielle Astral" $launchers
+        # A trailing separator so a sibling like remielle-server.old is not
+        # mistaken for the server and left running.
+        $serverRoot = $server + [IO.Path]::DirectorySeparatorChar
+        $launchers = @(Get-ProcessesUnder $Dir | Where-Object { -not (Test-Path -LiteralPath $server) -or -not $_.Path.StartsWith($serverRoot, [StringComparison]::OrdinalIgnoreCase) })
+        Stop-Processes "Sunbringer Astral" $launchers
         if (Test-Path -LiteralPath $server) {
             $servers = @(Get-ProcessesUnder $server)
             if ($servers.Count -gt 0 -and ($Purge -or (Ask (T "The Custom server is running. Stop it?" "\u0e40\u0e0b\u0e34\u0e23\u0e4c\u0e1f Custom \u0e01\u0e33\u0e25\u0e31\u0e07\u0e23\u0e31\u0e19 \u0e2b\u0e22\u0e38\u0e14\u0e44\u0e2b\u0e21?") $true))) {
@@ -236,10 +239,10 @@ function Invoke-Main {
             $keep = @("settings.json", "remielle-server/Persistent", ".remielle-cache/backups", "mods.json") | Where-Object { Test-Path -LiteralPath (Join-Path $Dir $_) }
             if ($keep) {
                 $backupDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
-                $archive = Join-Path $backupDir ("Remielle-Astral-backup-" + (Get-Date -Format "yyyyMMdd-HHmmss") + ".zip")
+                $archive = Join-Path $backupDir ("Sunbringer-Astral-backup-" + (Get-Date -Format "yyyyMMdd-HHmmss") + ".zip")
                 if ($DryRun) { Note ((T "would archive" "\u0e08\u0e30\u0e40\u0e01\u0e47\u0e1a") + " " + ($keep -join ", ") + " -> $archive") }
                 else {
-                    $stage = Join-Path ([IO.Path]::GetTempPath()) ("remielle-astral-backup-" + [Guid]::NewGuid().ToString("N").Substring(0, 8))
+                    $stage = Join-Path ([IO.Path]::GetTempPath()) ("sunbringer-astral-backup-" + [Guid]::NewGuid().ToString("N").Substring(0, 8))
                     try {
                         foreach ($k in $keep) {
                             $dst = Join-Path $stage $k
@@ -288,7 +291,7 @@ function Invoke-Main {
             if (-not $target -or (Test-Inside $target)) {
                 if ($DryRun) { Note ((T "would remove" "\u0e08\u0e30\u0e25\u0e1a") + " $l") } else { Remove-Item -LiteralPath $l -Force -ErrorAction SilentlyContinue }
             } else {
-                Note (T "Left {0}: it starts a Remielle Astral elsewhere ({1})" "\u0e44\u0e21\u0e48\u0e41\u0e15\u0e30 {0} \u0e40\u0e1e\u0e23\u0e32\u0e30\u0e40\u0e1b\u0e34\u0e14 Remielle Astral \u0e17\u0e35\u0e48\u0e2d\u0e37\u0e48\u0e19 ({1})" $l $target)
+                Note (T "Left {0}: it starts a Sunbringer Astral elsewhere ({1})" "\u0e44\u0e21\u0e48\u0e41\u0e15\u0e30 {0} \u0e40\u0e1e\u0e23\u0e32\u0e30\u0e40\u0e1b\u0e34\u0e14 Sunbringer Astral \u0e17\u0e35\u0e48\u0e2d\u0e37\u0e48\u0e19 ({1})" $l $target)
             }
         }
         if (Test-Path -Path $AppKey) {
@@ -308,7 +311,7 @@ function Invoke-Main {
         Write-Host ""
         if ($DryRun) { Write-Host (T "Dry run finished: nothing was changed." "\u0e17\u0e14\u0e25\u0e2d\u0e07\u0e40\u0e2a\u0e23\u0e47\u0e08: \u0e44\u0e21\u0e48\u0e21\u0e35\u0e2d\u0e30\u0e44\u0e23\u0e16\u0e39\u0e01\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19"); return }
         if ((Test-Path -LiteralPath $Dir) -and -not (Get-ChildItem -LiteralPath $Dir -Force)) { Remove-Item -LiteralPath $Dir -Force }
-        Write-Host (T "Remielle Astral is uninstalled." "\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Remielle Astral \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22") -ForegroundColor Green
+        Write-Host (T "Sunbringer Astral is uninstalled." "\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Sunbringer Astral \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22") -ForegroundColor Green
         if (Test-Path -LiteralPath $Dir) {
             $left = (Get-ChildItem -LiteralPath $Dir -Force | ForEach-Object { $_.Name }) -join " "
             Write-Host (T "Kept in {0}: {1}" "\u0e22\u0e31\u0e07\u0e40\u0e01\u0e47\u0e1a\u0e44\u0e27\u0e49\u0e43\u0e19 {0}: {1}" $Dir $left)

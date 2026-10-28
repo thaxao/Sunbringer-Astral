@@ -1,12 +1,12 @@
-# Remielle Astral installer for Windows (PowerShell 5.1 or 7).
+# Sunbringer Astral installer for Windows (PowerShell 5.1 or 7).
 #
-#   irm https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/install.ps1 | iex
-#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/install.ps1))) -Version v1.3.1.b3.3.3
-#   powershell -ExecutionPolicy Bypass -File install.ps1 -Zip .\remielle-astral-1.3.1.b3.3.3-windows-x86_64.zip
+#   irm https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/install.ps1 | iex
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/install.ps1))) -Version v1.4.3.b3.3.4
+#   powershell -ExecutionPolicy Bypass -File install.ps1 -Zip .\sunbringer-astral-1.4.3.b3.3.4-windows-x86_64.zip
 #
 #   -Version TAG    install that release instead of the newest ("v" optional)
 #   -Zip FILE       install a zip already downloaded; a SHA256SUMS beside it is checked
-#   -Dir DIR        install folder (default %LOCALAPPDATA%\Remielle-Astral)
+#   -Dir DIR        install folder (default %LOCALAPPDATA%\Sunbringer-Astral)
 #   -Check          only show what is installed and what the newest release is
 #   -Rollback       put back the version the last install replaced
 #   -Force          reinstall even when that version is already installed
@@ -20,7 +20,7 @@
 # for -Rollback.  The install is listed in Settings > Apps, whose Uninstall
 # button runs tools\uninstall.ps1.
 #
-# Environment: REMIELLE_REPO=owner/name (default thaxao/Remielle-Astral),
+# Environment: REMIELLE_REPO=owner/name (default thaxao/Sunbringer-Astral),
 # REMIELLE_RELEASES_URL=<a releases list in the GitHub shape> for a mirror.
 #
 # The file is plain ASCII on purpose: Windows PowerShell 5.1 reads a script
@@ -42,16 +42,16 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"   # the progress bar slows downloads tenfold in 5.1
 
-$Repo = if ($env:REMIELLE_REPO) { $env:REMIELLE_REPO } else { "thaxao/Remielle-Astral" }
+$Repo = if ($env:REMIELLE_REPO) { $env:REMIELLE_REPO } else { "thaxao/Sunbringer-Astral" }
 $Platform = "windows-x86_64"
-$AppKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\RemielleAstral"
+$AppKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\SunbringerAstral"
 $LegacyFiles = @(
-    "remielle-astral.exe", "Remielle Astral.exe", "remielle-astral.exe.old", "README.md", "LICENSE", "icon.png", "MANIFEST",
+    "sunbringer-astral.exe", "Sunbringer Astral.exe", "sunbringer-astral.exe.old", "README.md", "LICENSE", "icon.png", "MANIFEST",
     "tools/remielle-update", "tools/build-official-patch", "tools/import-patch",
     "tools/install.sh", "tools/install.ps1", "tools/install.cmd",
     "tools/update.sh", "tools/update.ps1", "tools/update.cmd",
     "tools/uninstall.sh", "tools/uninstall.ps1", "tools/uninstall.cmd",
-    "patch/Pryce.exe", "patch/Armorer.dll"
+    "patch/sunbringer.exe", "patch/sunbringer.dll", "patch/Pryce.exe", "patch/Armorer.dll"
 )
 $script:Thai = $false
 $script:Sha = ""
@@ -108,7 +108,7 @@ function Test-Newer([string]$A, [string]$B) {
 }
 
 function Get-ExeIn([string]$Folder) {
-    foreach ($n in @("remielle-astral.exe", "Remielle Astral.exe")) {
+    foreach ($n in @("sunbringer-astral.exe", "Sunbringer Astral.exe")) {
         $p = Join-Path $Folder $n
         if (Test-Path -LiteralPath $p) { return $p }
     }
@@ -124,7 +124,7 @@ function Get-VersionIn([string]$Folder) {
         try {
             $bytes = [IO.File]::ReadAllBytes($exe)
             $text = [Text.Encoding]::ASCII.GetString($bytes)
-            if ($text.Contains("usage: remielle-astral [--version")) {
+            if ($text.Contains("usage: sunbringer-astral [--version")) {
                 $psi = New-Object Diagnostics.ProcessStartInfo
                 $psi.FileName = $exe
                 $psi.Arguments = "--version"
@@ -172,7 +172,7 @@ function Get-Tree([string]$Folder) {
 # Launcher processes started from $Folder (by their path, so nothing else is
 # touched; the servers keep running).
 function Get-LauncherProcesses([string]$Folder) {
-    $names = @((Join-Path $Folder "remielle-astral.exe"), (Join-Path $Folder "Remielle Astral.exe"))
+    $names = @((Join-Path $Folder "sunbringer-astral.exe"), (Join-Path $Folder "Sunbringer Astral.exe"))
     Get-Process -ErrorAction SilentlyContinue | Where-Object {
         try { $_.Path -and ($names -contains $_.Path) } catch { $false }
     }
@@ -182,14 +182,14 @@ function Stop-Launcher([string]$Folder) {
     $procs = @(Get-LauncherProcesses $Folder)
     if ($procs.Count -eq 0) { return }
     $ids = ($procs | ForEach-Object { $_.Id }) -join ", "
-    if (-not (Ask (T "Remielle Astral is open (pid {0}). Close it to continue?" "Remielle Astral \u0e40\u0e1b\u0e34\u0e14\u0e2d\u0e22\u0e39\u0e48 (pid {0}) \u0e1b\u0e34\u0e14\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e17\u0e33\u0e15\u0e48\u0e2d\u0e44\u0e2b\u0e21?" $ids) $true)) {
-        Fail (T "Close Remielle Astral and run this again." "\u0e1b\u0e34\u0e14 Remielle Astral \u0e41\u0e25\u0e49\u0e27\u0e23\u0e31\u0e19\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07")
+    if (-not (Ask (T "Sunbringer Astral is open (pid {0}). Close it to continue?" "Sunbringer Astral \u0e40\u0e1b\u0e34\u0e14\u0e2d\u0e22\u0e39\u0e48 (pid {0}) \u0e1b\u0e34\u0e14\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e17\u0e33\u0e15\u0e48\u0e2d\u0e44\u0e2b\u0e21?" $ids) $true)) {
+        Fail (T "Close Sunbringer Astral and run this again." "\u0e1b\u0e34\u0e14 Sunbringer Astral \u0e41\u0e25\u0e49\u0e27\u0e23\u0e31\u0e19\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07")
     }
     foreach ($p in $procs) { try { [void]$p.CloseMainWindow() } catch { } }
     for ($i = 0; $i -lt 50 -and @(Get-LauncherProcesses $Folder).Count -gt 0; $i++) { Start-Sleep -Milliseconds 100 }
     Get-LauncherProcesses $Folder | ForEach-Object { try { $_.Kill() } catch { } }
     Start-Sleep -Milliseconds 300
-    Ok (T "Closed Remielle Astral (running servers keep going)" "\u0e1b\u0e34\u0e14 Remielle Astral \u0e41\u0e25\u0e49\u0e27 (\u0e40\u0e0b\u0e34\u0e23\u0e4c\u0e1f\u0e17\u0e35\u0e48\u0e23\u0e31\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e22\u0e31\u0e07\u0e17\u0e33\u0e07\u0e32\u0e19\u0e15\u0e48\u0e2d)")
+    Ok (T "Closed Sunbringer Astral (running servers keep going)" "\u0e1b\u0e34\u0e14 Sunbringer Astral \u0e41\u0e25\u0e49\u0e27 (\u0e40\u0e0b\u0e34\u0e23\u0e4c\u0e1f\u0e17\u0e35\u0e48\u0e23\u0e31\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e22\u0e31\u0e07\u0e17\u0e33\u0e07\u0e32\u0e19\u0e15\u0e48\u0e2d)")
 }
 
 # Copies the program in $From over $Dir.  What it replaces goes to
@@ -256,7 +256,7 @@ function Resolve-Release {
     $url = if ($env:REMIELLE_RELEASES_URL) { $env:REMIELLE_RELEASES_URL } else { "https://api.github.com/repos/$Repo/releases?per_page=30" }
     $releases = @()
     try {
-        $releases = @(Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "Remielle-Astral-installer"; "Accept" = "application/vnd.github+json" })
+        $releases = @(Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "Sunbringer-Astral-installer"; "Accept" = "application/vnd.github+json" })
     } catch {
         if (-not $Version) {
             Fail (T "Could not reach the release list of {0} (offline, or GitHub's hourly limit). Try again later, or use -Version TAG or -Zip FILE." "\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 release \u0e02\u0e2d\u0e07 {0} \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (\u0e2d\u0e2d\u0e1f\u0e44\u0e25\u0e19\u0e4c \u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e01\u0e34\u0e19\u0e42\u0e04\u0e27\u0e15\u0e32 GitHub) \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e20\u0e32\u0e22\u0e2b\u0e25\u0e31\u0e07 \u0e2b\u0e23\u0e37\u0e2d\u0e43\u0e0a\u0e49 -Version / -Zip" $Repo)
@@ -266,28 +266,28 @@ function Resolve-Release {
     foreach ($r in ($releases | ForEach-Object { $_ })) {
         if ($r.draft) { continue }
         if ($want -and (($r.tag_name -replace '^[vV]', '') -ne $want)) { continue }
-        $zip = $r.assets | Where-Object { $_.name -match "^remielle-astral-.+-$Platform\.zip$" } | Select-Object -First 1
+        $zip = $r.assets | Where-Object { $_.name -match "^sunbringer-astral-.+-$Platform\.zip$" } | Select-Object -First 1
         if (-not $zip) { continue }
         $sums = $r.assets | Where-Object { $_.name -eq "SHA256SUMS" } | Select-Object -First 1
         return [pscustomobject]@{
             Tag = $r.tag_name; Url = $zip.browser_download_url; Name = $zip.name
             SumsUrl = if ($sums) { $sums.browser_download_url } else { "" }
-            Version = ($zip.name -replace '^remielle-astral-', '') -replace "-$Platform\.zip$", ''
+            Version = ($zip.name -replace '^sunbringer-astral-', '') -replace "-$Platform\.zip$", ''
         }
     }
     if ($want) {
-        $name = "remielle-astral-$want-$Platform.zip"
+        $name = "sunbringer-astral-$want-$Platform.zip"
         return [pscustomobject]@{
             Tag = "v$want"; Url = "https://github.com/$Repo/releases/download/v$want/$name"; Name = $name
             SumsUrl = "https://github.com/$Repo/releases/download/v$want/SHA256SUMS"; Version = $want
         }
     }
-    Fail (T "No release of {0} carries remielle-astral-*-{1}.zip yet." "\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35 release \u0e02\u0e2d\u0e07 {0} \u0e17\u0e35\u0e48\u0e21\u0e35 remielle-astral-*-{1}.zip" $Repo $Platform)
+    Fail (T "No release of {0} carries sunbringer-astral-*-{1}.zip yet." "\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35 release \u0e02\u0e2d\u0e07 {0} \u0e17\u0e35\u0e48\u0e21\u0e35 sunbringer-astral-*-{1}.zip" $Repo $Platform)
 }
 
 function Get-File([string]$Url, [string]$OutFile) {
     if ($Url -like "file://*") { Copy-Item -LiteralPath ([Uri]$Url).LocalPath -Destination $OutFile -Force; return }
-    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -Headers @{ "User-Agent" = "Remielle-Astral-installer" }
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -Headers @{ "User-Agent" = "Sunbringer-Astral-installer" }
 }
 
 # The zip against the SHA256SUMS line for its name; the launcher's own
@@ -317,6 +317,15 @@ function Show-Checks {
     $wv = Test-WebView2
     if ($wv) { Ok (T "WebView2 Runtime {0} is present" "\u0e21\u0e35 WebView2 Runtime {0} \u0e41\u0e25\u0e49\u0e27" $wv) }
     else { Warn (T "The WebView2 Runtime was not found; the launcher offers to install it on first start (or get it from https://go.microsoft.com/fwlink/p/?LinkId=2124703)." "\u0e44\u0e21\u0e48\u0e1e\u0e1a WebView2 Runtime \u0e25\u0e31\u0e19\u0e40\u0e0a\u0e2d\u0e23\u0e4c\u0e08\u0e30\u0e40\u0e2a\u0e19\u0e2d\u0e43\u0e2b\u0e49\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07\u0e15\u0e2d\u0e19\u0e40\u0e1b\u0e34\u0e14\u0e04\u0e23\u0e31\u0e49\u0e07\u0e41\u0e23\u0e01") }
+    # Smart App Control (Windows 11) refuses unsigned programs outright, and
+    # every new build is a program it has never seen.
+    $sac = $null
+    try { $sac = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy" -Name VerifiedAndReputablePolicyState -ErrorAction Stop).VerifiedAndReputablePolicyState } catch { }
+    if ($sac -eq 1) {
+        Warn (T "Smart App Control is ON. It blocks programs that are not code-signed, and Sunbringer Astral, sunbringer.exe and sunbringer.dll are not: Windows will refuse to start them." "Smart App Control \u0e40\u0e1b\u0e34\u0e14\u0e2d\u0e22\u0e39\u0e48 \u0e21\u0e31\u0e19\u0e1a\u0e25\u0e47\u0e2d\u0e01\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e21\u0e35\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e14\u0e34\u0e08\u0e34\u0e17\u0e31\u0e25 \u0e0b\u0e36\u0e48\u0e07 Sunbringer Astral, sunbringer.exe \u0e41\u0e25\u0e30 sunbringer.dll \u0e44\u0e21\u0e48\u0e21\u0e35 Windows \u0e08\u0e30\u0e44\u0e21\u0e48\u0e22\u0e2d\u0e21\u0e40\u0e1b\u0e34\u0e14")
+        Warn (T "Turn it off in Windows Security > App & browser control > Smart App Control settings > Off, then start Sunbringer Astral." "\u0e1b\u0e34\u0e14\u0e44\u0e14\u0e49\u0e17\u0e35\u0e48 Windows Security > App & browser control > Smart App Control settings > Off \u0e41\u0e25\u0e49\u0e27\u0e04\u0e48\u0e2d\u0e22\u0e40\u0e1b\u0e34\u0e14 Sunbringer Astral")
+        if (Ask (T "Open Windows Security now?" "\u0e40\u0e1b\u0e34\u0e14 Windows Security \u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49\u0e40\u0e25\u0e22\u0e44\u0e2b\u0e21?") $true) { try { Start-Process "windowsdefender://appbrowser" } catch { } }
+    }
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         Note (T "Git for Windows is not installed: needed only for the Official server and patch." "\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35 Git for Windows: \u0e43\u0e0a\u0e49\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e0b\u0e34\u0e23\u0e4c\u0e1f\u0e41\u0e25\u0e30\u0e41\u0e1e\u0e15\u0e0a\u0e4c Official")
     }
@@ -334,7 +343,7 @@ function Set-Shortcut([string]$Path, [string]$Target) {
             try {
                 $old = $wsh.CreateShortcut($Path).TargetPath
                 if ($old -and -not $old.StartsWith($Dir, [StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $old)) {
-                    Note (T "Left {0}: it starts a Remielle Astral elsewhere ({1})" "\u0e44\u0e21\u0e48\u0e41\u0e15\u0e30 {0} \u0e40\u0e1e\u0e23\u0e32\u0e30\u0e40\u0e1b\u0e34\u0e14 Remielle Astral \u0e17\u0e35\u0e48\u0e2d\u0e37\u0e48\u0e19 ({1})" $Path $old)
+                    Note (T "Left {0}: it starts a Sunbringer Astral elsewhere ({1})" "\u0e44\u0e21\u0e48\u0e41\u0e15\u0e30 {0} \u0e40\u0e1e\u0e23\u0e32\u0e30\u0e40\u0e1b\u0e34\u0e14 Sunbringer Astral \u0e17\u0e35\u0e48\u0e2d\u0e37\u0e48\u0e19 ({1})" $Path $old)
                     return
                 }
             } catch { }
@@ -348,7 +357,7 @@ function Set-Shortcut([string]$Path, [string]$Target) {
             $s.TargetPath = $Target
             $s.WorkingDirectory = $Dir
             $s.IconLocation = "$Target,0"
-            $s.Description = "Remielle Astral - Zenless Zone Zero server launcher"
+            $s.Description = "Sunbringer Astral - Zenless Zone Zero server launcher"
             $s.Save()
 
             if (Test-Path -LiteralPath $tempLnk) {
@@ -369,7 +378,7 @@ function Set-Shortcut([string]$Path, [string]$Target) {
         $s.TargetPath = $Target
         $s.WorkingDirectory = $Dir
         $s.IconLocation = "$Target,0"
-        $s.Description = "Remielle Astral - Zenless Zone Zero server launcher"
+        $s.Description = "Sunbringer Astral - Zenless Zone Zero server launcher"
         $s.Save()
     } catch {
         Warn (T "Could not create shortcut at '{0}': {1}" "\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e17\u0e32\u0e07\u0e25\u0e31\u0e14 '{0}': {1}" $Path $_.Exception.Message)
@@ -379,13 +388,13 @@ function Set-Shortcut([string]$Path, [string]$Target) {
 function Set-Integration([string]$V) {
     $exe = Get-ExeIn $Dir
     $desktop = [Environment]::GetFolderPath("Desktop")
-    if ($desktop) { Set-Shortcut (Join-Path $desktop "Remielle Astral.lnk") $exe }
+    if ($desktop) { Set-Shortcut (Join-Path $desktop "Sunbringer Astral.lnk") $exe }
     $userDesktop = Join-Path $env:USERPROFILE "Desktop"
     if ($userDesktop -and (Test-Path -LiteralPath $userDesktop) -and ($userDesktop -ne $desktop)) {
-        Set-Shortcut (Join-Path $userDesktop "Remielle Astral.lnk") $exe
+        Set-Shortcut (Join-Path $userDesktop "Sunbringer Astral.lnk") $exe
     }
     $programs = [Environment]::GetFolderPath("Programs")
-    if ($programs) { Set-Shortcut (Join-Path $programs "Remielle Astral.lnk") $exe }
+    if ($programs) { Set-Shortcut (Join-Path $programs "Sunbringer Astral.lnk") $exe }
     Ok (T "Desktop and Start menu shortcuts" "\u0e17\u0e32\u0e07\u0e25\u0e31\u0e14\u0e1a\u0e19 Desktop \u0e41\u0e25\u0e30 Start menu")
 
     # Settings > Apps lists it, and its Uninstall button runs uninstall.ps1.
@@ -394,7 +403,7 @@ function Set-Integration([string]$V) {
         $size = [int]((Get-ChildItem -LiteralPath $Dir -Recurse -File -Force -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\.remielle-cache\*" } | Measure-Object Length -Sum).Sum / 1KB)
         New-Item -Path $AppKey -Force | Out-Null
         $values = @{
-            DisplayName = "Remielle Astral"; DisplayVersion = $V; Publisher = "thaxao"
+            DisplayName = "Sunbringer Astral"; DisplayVersion = $V; Publisher = "thaxao"
             DisplayIcon = $exe; InstallLocation = $Dir; URLInfoAbout = "https://github.com/$Repo"
             UninstallString = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$uninstall`""
             QuietUninstallString = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$uninstall`" -Yes"
@@ -413,7 +422,7 @@ function Set-Integration([string]$V) {
 function Invoke-Check {
     $have = Get-VersionIn $Dir
     $rel = Resolve-Release
-    Say "Remielle Astral"
+    Say "Sunbringer Astral"
     $none = T "not installed" "\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07"
     Note ((T "Installed: {0} ({1})" "\u0e17\u0e35\u0e48\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07: {0} ({1})" $(if ($have) { $have } else { $none }) $Dir))
     Note (T "Newest: {0} ({1})" "\u0e43\u0e2b\u0e21\u0e48\u0e2a\u0e38\u0e14: {0} ({1})" $rel.Version $rel.Tag)
@@ -441,7 +450,7 @@ function Invoke-Install([string]$Temp) {
         $zipFull = (Resolve-Path -LiteralPath $Zip).Path
         $name = Split-Path $zipFull -Leaf
         $rel = [pscustomobject]@{ Tag = ""; Url = "file:///$($zipFull.Replace('\', '/'))"; Name = $name; SumsUrl = ""
-            Version = ($name -replace '^remielle-astral-', '') -replace "-$Platform\.zip$", '' }
+            Version = ($name -replace '^sunbringer-astral-', '') -replace "-$Platform\.zip$", '' }
     } else {
         Say (T "Looking up releases of {0}" "\u0e15\u0e23\u0e27\u0e08 release \u0e02\u0e2d\u0e07 {0}" $Repo)
         $rel = Resolve-Release
@@ -507,12 +516,12 @@ function Invoke-Install([string]$Temp) {
 
     $unpacked = Join-Path $Temp "unpacked"
     Expand-Archive -LiteralPath $zipPath -DestinationPath $unpacked -Force
-    $exe = Get-ChildItem -LiteralPath $unpacked -Recurse -File | Where-Object { $_.Name -in @("remielle-astral.exe", "Remielle Astral.exe") } | Select-Object -First 1
-    if (-not $exe) { Fail (T "The zip holds no remielle-astral.exe." "\u0e43\u0e19 zip \u0e44\u0e21\u0e48\u0e21\u0e35 remielle-astral.exe") }
+    $exe = Get-ChildItem -LiteralPath $unpacked -Recurse -File | Where-Object { $_.Name -in @("sunbringer-astral.exe", "Sunbringer Astral.exe") } | Select-Object -First 1
+    if (-not $exe) { Fail (T "The zip holds no sunbringer-astral.exe." "\u0e43\u0e19 zip \u0e44\u0e21\u0e48\u0e21\u0e35 sunbringer-astral.exe") }
     $root = $exe.DirectoryName
     $fs = [IO.File]::OpenRead($exe.FullName)
     $m0 = $fs.ReadByte(); $m1 = $fs.ReadByte(); $fs.Close()
-    if ($m0 -ne 0x4D -or $m1 -ne 0x5A) { Fail (T "remielle-astral.exe in the zip is not a Windows program." "remielle-astral.exe \u0e43\u0e19 zip \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 Windows") }
+    if ($m0 -ne 0x4D -or $m1 -ne 0x5A) { Fail (T "sunbringer-astral.exe in the zip is not a Windows program." "sunbringer-astral.exe \u0e43\u0e19 zip \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 Windows") }
     $built = Get-VersionIn $root
     $newVersion = if ($built) { $built } else { $rel.Version }
     Show-Checks
@@ -528,9 +537,9 @@ function Invoke-Install([string]$Temp) {
     if (-not $NoShortcuts) { Set-Integration $newVersion }
 
     Write-Host ""
-    Write-Host (T "Remielle Astral {0} is installed." "\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Remielle Astral {0} \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22" $newVersion) -ForegroundColor Green
+    Write-Host (T "Sunbringer Astral {0} is installed." "\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Sunbringer Astral {0} \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22" $newVersion) -ForegroundColor Green
     Write-Host (T "This is a demo build: if you find a bug, please report it on Discord (the link is in the launcher)." "\u0e23\u0e38\u0e48\u0e19\u0e19\u0e35\u0e49\u0e22\u0e31\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e40\u0e14\u0e42\u0e21 \u0e16\u0e49\u0e32\u0e40\u0e08\u0e2d\u0e1a\u0e31\u0e04\u0e41\u0e08\u0e49\u0e07\u0e17\u0e32\u0e07 Discord \u0e44\u0e14\u0e49\u0e40\u0e25\u0e22 (\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19\u0e25\u0e31\u0e19\u0e40\u0e0a\u0e2d\u0e23\u0e4c)")
-    if (-not $NoLaunch -and (Ask (T "Start Remielle Astral now?" "\u0e40\u0e1b\u0e34\u0e14 Remielle Astral \u0e40\u0e25\u0e22\u0e44\u0e2b\u0e21?") $true)) {
+    if (-not $NoLaunch -and (Ask (T "Start Sunbringer Astral now?" "\u0e40\u0e1b\u0e34\u0e14 Sunbringer Astral \u0e40\u0e25\u0e22\u0e44\u0e2b\u0e21?") $true)) {
         Start-Process -FilePath (Get-ExeIn $Dir) -WorkingDirectory $Dir
     }
 }
@@ -539,7 +548,7 @@ function Invoke-Install([string]$Temp) {
 function Invoke-Main {
     if (-not $Dir) {
         if (-not $env:LOCALAPPDATA) { Fail "LOCALAPPDATA is not set" }
-        $script:Dir = Join-Path $env:LOCALAPPDATA "Remielle-Astral"
+        $script:Dir = Join-Path $env:LOCALAPPDATA "Sunbringer-Astral"
     }
     $script:Dir = $Dir.TrimEnd('\', '/')
     $settings = Join-Path $Dir "settings.json"
@@ -549,14 +558,14 @@ function Invoke-Main {
         if ($s -match '"lang":\s*"th"') { $script:Thai = $true }
         if ($s -match '"lang":\s*"en"') { $script:Thai = $false }
     }
-    if (-not [Environment]::Is64BitOperatingSystem) { Fail (T "Remielle Astral is built for 64-bit Windows only." "Remielle Astral \u0e21\u0e35\u0e40\u0e09\u0e1e\u0e32\u0e30 Windows 64-bit") }
+    if (-not [Environment]::Is64BitOperatingSystem) { Fail (T "Sunbringer Astral is built for 64-bit Windows only." "Sunbringer Astral \u0e21\u0e35\u0e40\u0e09\u0e1e\u0e32\u0e30 Windows 64-bit") }
     try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 
-    $mutex = New-Object Threading.Mutex($false, "Local\RemielleAstral_Installer_Lock")
+    $mutex = New-Object Threading.Mutex($false, "Local\SunbringerAstral_Installer_Lock")
     $owned = $false
     try { $owned = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
-    if (-not $owned) { Fail (T "Another install or uninstall of Remielle Astral is running." "\u0e21\u0e35\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Remielle Astral \u0e17\u0e33\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27") }
-    $temp = Join-Path ([IO.Path]::GetTempPath()) ("remielle-astral-install-" + [Guid]::NewGuid().ToString("N").Substring(0, 8))
+    if (-not $owned) { Fail (T "Another install or uninstall of Sunbringer Astral is running." "\u0e21\u0e35\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e16\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 Sunbringer Astral \u0e17\u0e33\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27") }
+    $temp = Join-Path ([IO.Path]::GetTempPath()) ("sunbringer-astral-install-" + [Guid]::NewGuid().ToString("N").Substring(0, 8))
     New-Item -ItemType Directory -Force -Path $temp | Out-Null
     try {
         if ($Check) { Invoke-Check }

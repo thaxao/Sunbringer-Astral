@@ -1,0 +1,26 @@
+pkgbase = sunbringer-astral-bin
+	pkgdesc = Launcher for Zenless Zone Zero private servers: servers, account editor, mods
+	pkgver = 1.5.2.b3.4.1
+	pkgrel = 1
+	url = https://github.com/thaxao/Sunbringer-Astral
+	install = sunbringer-astral-bin.install
+	arch = x86_64
+	license = Apache-2.0
+	depends = gtk3
+	depends = webkit2gtk-4.1
+	depends = glib2
+	depends = glibc
+	depends = bash
+	depends = curl
+	depends = unzip
+	optdepends = wine: start the game on Linux
+	optdepends = git: the Official server and the Official client patch
+	provides = sunbringer-astral
+	conflicts = sunbringer-astral
+	conflicts = sunbringer-astral-git
+	options = !strip
+	options = !debug
+	source = sunbringer-astral-1.5.2.b3.4.1-linux-x86_64.zip::https://github.com/thaxao/Sunbringer-Astral/releases/download/v1.5.b3.4.1/sunbringer-astral-1.5.2.b3.4.1-linux-x86_64.zip
+	sha256sums = 54f4e6fb11c54cd9cdb5c78ee8ea17e8752bf312ce597c39c05e0b6ecf95cfd9
+
+pkgname = sunbringer-astral-bin

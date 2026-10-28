@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Remielle Astral uninstaller for Linux.
+# Sunbringer Astral uninstaller for Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/uninstall.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/uninstall.sh | bash
 #   curl -fsSL .../uninstall.sh | bash -s -- --purge
 #
 # By default only the program goes: its files (the release's MANIFEST), the
@@ -11,12 +11,12 @@
 #
 # Options
 #   --purge        remove those too.  settings.json, the saves and the save
-#                  backups are packed into ~/Remielle-Astral-backup-<date>.tar.gz
+#                  backups are packed into ~/Sunbringer-Astral-backup-<date>.tar.gz
 #                  first; the mod library is only removed when you say so
 #   --with-mods    with --purge: remove the mod library without asking
 #   --no-backup    with --purge: no archive
 #   --dry-run      show what would be removed and change nothing
-#   --dir DIR      the install folder (default ~/.local/share/remielle-astral)
+#   --dir DIR      the install folder (default ~/.local/share/sunbringer-astral)
 #   -y, --yes      answer every question with its default
 #
 # The game client and an Official server checkout live in folders of your
@@ -29,19 +29,21 @@ set -uo pipefail
 export LC_ALL=C
 
 DATA_HOME="${XDG_DATA_HOME:-${HOME:-}/.local/share}"
-DIR="$DATA_HOME/remielle-astral"
-BIN_LINK="${HOME:-}/.local/bin/remielle-astral"
-APP_ID="io.github.thaxao.RemielleAstral"
+DIR="$DATA_HOME/sunbringer-astral"
+BIN_LINK="${HOME:-}/.local/bin/sunbringer-astral"
+APP_ID="io.github.thaxao.SunbringerAstral"
 ENTRY="$DATA_HOME/applications/$APP_ID.desktop"
+# The hidden entry the launcher writes for the game's systemd scope.
+GAME_ENTRY="$DATA_HOME/applications/$APP_ID.Game.desktop"
 ICON="$DATA_HOME/icons/hicolor/256x256/apps/$APP_ID.png"
-LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/remielle-astral-op.lock"
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/sunbringer-astral-op.lock"
 
-LEGACY_FILES="remielle-astral remielle-astral.old README.md LICENSE icon.png MANIFEST
+LEGACY_FILES="sunbringer-astral sunbringer-astral.old README.md LICENSE icon.png MANIFEST
 tools/remielle-update tools/build-official-patch tools/import-patch
 tools/install.sh tools/install.ps1 tools/install.cmd
 tools/update.sh tools/update.ps1 tools/update.cmd
 tools/uninstall.sh tools/uninstall.ps1 tools/uninstall.cmd
-patch/Pryce.exe patch/Armorer.dll"
+patch/sunbringer.exe patch/sunbringer.dll patch/Pryce.exe patch/Armorer.dll"
 # The mod library's parts when it lives in the install folder (the default).
 MOD_PARTS="xxmi mods.json staging quarantine backups cache"
 
@@ -80,7 +82,7 @@ ask() {
 
 usage() {
   cat <<'EOF'
-Remielle Astral uninstaller for Linux
+Sunbringer Astral uninstaller for Linux
 
   uninstall.sh              remove the program; keep settings, saves, caches and mods
   uninstall.sh --purge      remove those too (settings and saves are archived to ~ first)
@@ -88,7 +90,7 @@ Remielle Astral uninstaller for Linux
   --with-mods   with --purge: remove the mod library without asking
   --no-backup   with --purge: do not keep the archive
   --dry-run     show what would be removed, change nothing
-  --dir DIR     install folder (default ~/.local/share/remielle-astral)
+  --dir DIR     install folder (default ~/.local/share/sunbringer-astral)
   -y, --yes     answer every question with its default
 EOF
 }
@@ -99,7 +101,7 @@ size_of() { du -sh "$@" 2>/dev/null | awk '{ print $1 }' | head -1; }
 # files), or only says so with --dry-run.
 remove() {
   case "$1" in
-    "$DIR"/*|"$BIN_LINK"|"$ENTRY"|"$ICON"|"$DATA_HOME/$APP_ID") ;;
+    "$DIR"/*|"$BIN_LINK"|"$ENTRY"|"$GAME_ENTRY"|"$ICON"|"$DATA_HOME/$APP_ID") ;;
     *) warn "refusing to remove $1"; return 1 ;;
   esac
   [ -e "$1" ] || [ -L "$1" ] || return 0
@@ -179,29 +181,32 @@ main() {
   esac
 
   local has_program=0 has_link=0 has_entry=0
-  { [ -e "$DIR/remielle-astral" ] || [ -f "$DIR/MANIFEST" ] || [ -f "$DIR/.install-info" ]; } && has_program=1
+  { [ -e "$DIR/sunbringer-astral" ] || [ -f "$DIR/MANIFEST" ] || [ -f "$DIR/.install-info" ]; } && has_program=1
   [ -L "$BIN_LINK" ] && case "$(readlink "$BIN_LINK")" in "$DIR"/*) has_link=1 ;; esac
   [ -f "$ENTRY" ] && grep -qF -- "$DIR" "$ENTRY" && has_entry=1
   if [ "$has_program" = 0 ] && [ "$has_link" = 0 ] && [ "$has_entry" = 0 ] && { [ "$purge" = 0 ] || [ ! -d "$DIR" ]; }; then
-    say "$(T "Remielle Astral is not installed in $DIR." "ไม่พบ Remielle Astral ใน $DIR")"
+    say "$(T "Sunbringer Astral is not installed in $DIR." "ไม่พบ Sunbringer Astral ใน $DIR")"
     return 0
   fi
   # After a plain uninstall only settings, caches and mods survive here;
-  # .remielle-cache alone still marks this as Remielle Astral's folder.
-  if [ -d "$DIR" ] && [ ! -e "$DIR/remielle-astral" ] && [ ! -f "$DIR/settings.json" ] && [ ! -f "$DIR/.install-info" ] && [ ! -f "$DIR/MANIFEST" ] && [ ! -d "$DIR/xxmi" ] && [ ! -d "$DIR/.remielle-cache" ]; then
-    die "$(T "$DIR does not look like a Remielle Astral folder; nothing was removed." "$DIR ไม่ใช่โฟลเดอร์ของ Remielle Astral จึงไม่ลบอะไร")"
+  # .remielle-cache alone still marks this as Sunbringer Astral's folder.
+  if [ -d "$DIR" ] && [ ! -e "$DIR/sunbringer-astral" ] && [ ! -f "$DIR/settings.json" ] && [ ! -f "$DIR/.install-info" ] && [ ! -f "$DIR/MANIFEST" ] && [ ! -d "$DIR/xxmi" ] && [ ! -d "$DIR/.remielle-cache" ]; then
+    die "$(T "$DIR does not look like a Sunbringer Astral folder; nothing was removed." "$DIR ไม่ใช่โฟลเดอร์ของ Sunbringer Astral จึงไม่ลบอะไร")"
   fi
 
   if command -v flock >/dev/null; then
-    { exec 9>"$LOCK_FILE" && flock -n 9; } ||
-      die "$(T "Another install or uninstall of Remielle Astral is running." "มีการติดตั้งหรือถอนการติดตั้ง Remielle Astral ทำงานอยู่แล้ว")"
+    if ! { exec 9>"$LOCK_FILE"; } 2>/dev/null; then
+      LOCK_FILE="${TMPDIR:-/tmp}/sunbringer-astral-op-${UID:-$(id -u)}.lock"
+      exec 9>"$LOCK_FILE" || die "$(T "Cannot create the installer lock file." "สร้างไฟล์ล็อกสำหรับติดตั้งไม่ได้")"
+    fi
+    flock -n 9 || die "$(T "Another install or uninstall of Sunbringer Astral is running." "มีการติดตั้งหรือถอนการติดตั้ง Sunbringer Astral ทำงานอยู่แล้ว")"
   fi
 
   real="$DIR"
   [ -d "$DIR" ] && real="$(cd "$DIR" && pwd -P)"
 
   # ---- the plan
-  say "$(T "Uninstalling Remielle Astral" "ถอนการติดตั้ง Remielle Astral") ($DIR)"
+  say "$(T "Uninstalling Sunbringer Astral" "ถอนการติดตั้ง Sunbringer Astral") ($DIR)"
   [ "$dry" = 1 ] && note "$(T "dry run: nothing is changed" "ทดลองดู: ไม่มีอะไรถูกเปลี่ยน")"
   note "$(T "Program:" "โปรแกรม:") $(T "removed" "ลบ")"
   mods_here=""
@@ -233,7 +238,7 @@ main() {
   [ -n "$client_dir" ] && note "$(T "Game client folder, not touched:" "โฟลเดอร์เกม ไม่แตะ:") $client_dir"
 
   if [ "$purge" = 1 ]; then
-    ask "$(T "Remove Remielle Astral and its data?" "ลบ Remielle Astral และข้อมูลทั้งหมดไหม?")" y || { ok "$(T "Cancelled." "ยกเลิกแล้ว")"; return 0; }
+    ask "$(T "Remove Sunbringer Astral and its data?" "ลบ Sunbringer Astral และข้อมูลทั้งหมดไหม?")" y || { ok "$(T "Cancelled." "ยกเลิกแล้ว")"; return 0; }
   else
     ask "$(T "Remove the program (your data stays)?" "ลบโปรแกรม (ข้อมูลยังอยู่) ไหม?")" y || { ok "$(T "Cancelled." "ยกเลิกแล้ว")"; return 0; }
   fi
@@ -244,10 +249,10 @@ main() {
 
   # ---- close what runs from here
   launcher_pids="$(pids_under "$real" | while read -r p; do
-    case "$(readlink "/proc/$p/exe" 2>/dev/null)" in "$real/remielle-astral"*) echo "$p" ;; esac
+    case "$(readlink "/proc/$p/exe" 2>/dev/null)" in "$real/sunbringer-astral"*) echo "$p" ;; esac
   done | tr '\n' ' ')"
   # shellcheck disable=SC2086
-  stop_pids "Remielle Astral" $launcher_pids
+  stop_pids "Sunbringer Astral" $launcher_pids
   server_pids="$(pids_under "$real/remielle-server" | tr '\n' ' ')"
   if [ -n "${server_pids// /}" ]; then
     if [ "$purge" = 1 ] || ask "$(T "The Custom server is running (pid ${server_pids% }). Stop it?" "เซิร์ฟ Custom กำลังรัน (pid ${server_pids% }) หยุดไหม?")" y; then
@@ -263,7 +268,7 @@ main() {
       [ -e "$DIR/$f" ] && parts="$parts $f"
     done
     if [ -n "$parts" ]; then
-      archive="$HOME/Remielle-Astral-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+      archive="$HOME/Sunbringer-Astral-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
       if [ "$dry" = 1 ]; then
         note "$(T "would archive" "จะเก็บ")$parts → $archive"
       else
@@ -305,13 +310,16 @@ main() {
       *) note "$(T "Left $BIN_LINK: it points elsewhere" "ไม่แตะ $BIN_LINK เพราะชี้ไปที่อื่น") ($(readlink "$BIN_LINK"))" ;;
     esac
   fi
+  if [ -f "$GAME_ENTRY" ] && { grep -qF -- "$DIR" "$GAME_ENTRY" || grep -qF -- "$real" "$GAME_ENTRY"; }; then
+    remove "$GAME_ENTRY"
+  fi
   if [ -f "$ENTRY" ]; then
     if grep -qF -- "$DIR" "$ENTRY" || grep -qF -- "$real" "$ENTRY"; then
       remove "$ENTRY"
       remove "$ICON"
       did "$(T "Menu entry removed" "ลบเมนูแอปแล้ว")"
     else
-      note "$(T "Left the menu entry: it starts a Remielle Astral elsewhere" "ไม่แตะเมนูแอป เพราะเปิด Remielle Astral ที่อื่น") ($(sed -n 's/^Exec=//p' "$ENTRY" | head -1))"
+      note "$(T "Left the menu entry: it starts a Sunbringer Astral elsewhere" "ไม่แตะเมนูแอป เพราะเปิด Sunbringer Astral ที่อื่น") ($(sed -n 's/^Exec=//p' "$ENTRY" | head -1))"
     fi
   fi
   if [ "$dry" = 0 ]; then
@@ -327,7 +335,7 @@ main() {
     return 0
   fi
   [ -d "$DIR" ] && rmdir "$DIR" 2>/dev/null
-  printf '\n%s%s%s\n' "$G$B" "$(T "Remielle Astral is uninstalled." "ถอนการติดตั้ง Remielle Astral เรียบร้อย")" "$N"
+  printf '\n%s%s%s\n' "$G$B" "$(T "Sunbringer Astral is uninstalled." "ถอนการติดตั้ง Sunbringer Astral เรียบร้อย")" "$N"
   if [ -d "$DIR" ]; then
     kept="$(cd "$DIR" && ls -A 2>/dev/null | tr '\n' ' ')"
     if [ -n "$kept" ]; then

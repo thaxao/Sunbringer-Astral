@@ -1,0 +1,17 @@
+post_install() {
+  cat <<'MSG'
+==> Sunbringer Astral: start it from the menu (Games) or with `sunbringer-astral`.
+==> Your settings, saves, Custom server and mods live in ~/.local/share/sunbringer-astral
+==> Installed it before with tools/install.sh?  Run its uninstall.sh once (it keeps
+    that data), so its menu entry does not hide this one.
+==> This is a demo build: report bugs on Discord (the link is in the launcher).
+MSG
+}
+
+post_upgrade() {
+  echo "==> Sunbringer Astral updated; reopen it if it is running."
+}
+
+post_remove() {
+  echo "==> Your data in ~/.local/share/sunbringer-astral was left alone; delete it by hand if you want it gone."
+}

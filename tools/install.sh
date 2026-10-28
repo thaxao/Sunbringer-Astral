@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Remielle Astral installer for Linux.
+# Sunbringer Astral installer for Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/thaxao/Remielle-Astral/main/tools/install.sh | bash
-#   curl -fsSL .../install.sh | bash -s -- --version v1.3.1.b3.3.3
-#   bash install.sh --zip ~/Downloads/remielle-astral-1.3.1.b3.3.3-linux-x86_64.zip
+#   curl -fsSL https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/install.sh | bash
+#   curl -fsSL .../install.sh | bash -s -- --version v1.4.3.b3.3.4
+#   bash install.sh --zip ~/Downloads/sunbringer-astral-1.4.3.b3.3.4-linux-x86_64.zip
 #
 # Options
 #   --version TAG   install that release instead of the newest ("v" optional)
 #   --zip FILE      install a zip already downloaded; a SHA256SUMS beside it is
 #                   checked when there is one
-#   --dir DIR       install folder (default ~/.local/share/remielle-astral)
+#   --dir DIR       install folder (default ~/.local/share/sunbringer-astral)
 #   --check         only show what is installed and what the newest release is
 #   --rollback      put back the version the last install replaced
 #   --force         reinstall even when that version is already installed
@@ -22,7 +22,7 @@
 # in the same folder are never touched.  The version being replaced is kept
 # for --rollback.  Pre-releases count: alpha builds are published that way.
 #
-# Environment: REMIELLE_REPO=owner/name (default thaxao/Remielle-Astral),
+# Environment: REMIELLE_REPO=owner/name (default thaxao/Sunbringer-Astral),
 # REMIELLE_RELEASES_URL=<a releases list in the GitHub shape> for a mirror.
 
 # Nothing runs until `main "$@"` on the last line, so a download cut short by
@@ -31,23 +31,23 @@
 set -uo pipefail
 export LC_ALL=C
 
-REPO="${REMIELLE_REPO:-thaxao/Remielle-Astral}"
+REPO="${REMIELLE_REPO:-thaxao/Sunbringer-Astral}"
 DATA_HOME="${XDG_DATA_HOME:-${HOME:-}/.local/share}"
-DIR="$DATA_HOME/remielle-astral"
+DIR="$DATA_HOME/sunbringer-astral"
 BIN_DIR="${HOME:-}/.local/bin"
 APP_DIR="$DATA_HOME/applications"
 ICON_DIR="$DATA_HOME/icons/hicolor/256x256/apps"
-APP_ID="io.github.thaxao.RemielleAstral"
+APP_ID="io.github.thaxao.SunbringerAstral"
 PLATFORM="linux-x86_64"
-LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/remielle-astral-op.lock"
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/sunbringer-astral-op.lock"
 
 # Files of releases made before the zips carried a MANIFEST.
-LEGACY_FILES="remielle-astral remielle-astral.old README.md LICENSE icon.png MANIFEST
+LEGACY_FILES="sunbringer-astral sunbringer-astral.old README.md LICENSE icon.png MANIFEST
 tools/remielle-update tools/build-official-patch tools/import-patch
 tools/install.sh tools/install.ps1 tools/install.cmd
 tools/update.sh tools/update.ps1 tools/update.cmd
 tools/uninstall.sh tools/uninstall.ps1 tools/uninstall.cmd
-patch/Pryce.exe patch/Armorer.dll"
+patch/sunbringer.exe patch/sunbringer.dll patch/Pryce.exe patch/Armorer.dll"
 
 want_tag="" zip_file="" mode="install" force=0 menu=1 launch=1 yes=0 thai=0
 TMP="" TAG="" URL="" SUMS_URL="" ZIP_NAME="" NEW_VERSION="" SHA=""
@@ -86,7 +86,7 @@ ask() {
 
 usage() {
   cat <<'EOF'
-Remielle Astral installer for Linux
+Sunbringer Astral installer for Linux
 
   install.sh                    install or update to the newest release
   install.sh --version TAG      install that release
@@ -94,7 +94,7 @@ Remielle Astral installer for Linux
   install.sh --check            show the installed and the newest version
   install.sh --rollback         put back the version the last install replaced
 
-  --dir DIR     install folder (default ~/.local/share/remielle-astral)
+  --dir DIR     install folder (default ~/.local/share/sunbringer-astral)
   --force       reinstall the same version
   --no-menu     no menu entry, icon or ~/.local/bin link
   --no-launch   do not offer to start it
@@ -141,8 +141,8 @@ ver_gt() {
 # --version says so in its usage text; an older one would open its window
 # instead, so it is only asked when it can answer.
 version_in() {
-  local exe="$1/remielle-astral" v=""
-  if [ -x "$exe" ] && grep -qaF 'usage: remielle-astral [--version' "$exe" 2>/dev/null; then
+  local exe="$1/sunbringer-astral" v=""
+  if [ -x "$exe" ] && grep -qaF 'usage: sunbringer-astral [--version' "$exe" 2>/dev/null; then
     v="$(timeout 5 "$exe" --version 2>/dev/null | head -1)" || v=""
   fi
   if [ -z "$v" ] && [ -f "$1/.install-info" ]; then
@@ -170,7 +170,7 @@ list_tree() { (cd "$1" && find . -type f | sed 's|^\./||' | LC_ALL=C sort); }
 is_elf() { [ "$(head -c 4 "$1" 2>/dev/null | od -An -c | tr -d ' \n')" = '177ELF' ]; }
 
 # Processes running the file $1, found by their exe link: names and
-# arguments do not matter, and nothing else that mentions "remielle-astral"
+# arguments do not matter, and nothing else that mentions "sunbringer-astral"
 # (an editor, this script, the servers) is touched.
 pids_of() {
   local p exe
@@ -182,12 +182,12 @@ pids_of() {
 
 stop_launcher() {
   local exe pids
-  [ -e "$DIR/remielle-astral" ] || return 0
-  exe="$(cd "$DIR" && pwd -P)/remielle-astral"
+  [ -e "$DIR/sunbringer-astral" ] || return 0
+  exe="$(cd "$DIR" && pwd -P)/sunbringer-astral"
   pids="$(pids_of "$exe" | tr '\n' ' ')"
   [ -n "${pids// /}" ] || return 0
-  if ! ask "$(T "Remielle Astral is open (pid ${pids% }). Close it to continue?" "Remielle Astral เปิดอยู่ (pid ${pids% }) ปิดเพื่อทำต่อไหม?")" y; then
-    die "$(T "Close Remielle Astral and run this again." "ปิด Remielle Astral แล้วรันใหม่อีกครั้ง")"
+  if ! ask "$(T "Sunbringer Astral is open (pid ${pids% }). Close it to continue?" "Sunbringer Astral เปิดอยู่ (pid ${pids% }) ปิดเพื่อทำต่อไหม?")" y; then
+    die "$(T "Close Sunbringer Astral and run this again." "ปิด Sunbringer Astral แล้วรันใหม่อีกครั้ง")"
   fi
   # shellcheck disable=SC2086
   kill $pids 2>/dev/null
@@ -198,7 +198,7 @@ stop_launcher() {
   pids="$(pids_of "$exe" | tr '\n' ' ')"
   # shellcheck disable=SC2086
   [ -n "${pids// /}" ] && kill -9 $pids 2>/dev/null
-  ok "$(T "Closed Remielle Astral (running servers keep going)" "ปิด Remielle Astral แล้ว (เซิร์ฟที่รันอยู่ยังทำงานต่อ)")"
+  ok "$(T "Closed Sunbringer Astral (running servers keep going)" "ปิด Sunbringer Astral แล้ว (เซิร์ฟที่รันอยู่ยังทำงานต่อ)")"
 }
 
 # Copies the program in folder $1 over $DIR.  What it replaces goes to
@@ -211,7 +211,7 @@ install_from() {
   [ -f "$from/MANIFEST.new" ] && mv "$from/MANIFEST.new" "$from/MANIFEST"
   new_list="$(program_files "$from")"
 
-  if [ -e "$DIR/remielle-astral" ]; then
+  if [ -e "$DIR/sunbringer-astral" ]; then
     old_list="$(program_files "$DIR")"
     rm -rf "$prev.new" && mkdir -p "$prev.new"
     while IFS= read -r f; do
@@ -233,7 +233,7 @@ install_from() {
     # Written beside and renamed over, so a file in use is replaced whole.
     { cp -p "$from/$f" "$DIR/$f.astral-new" && mv -f "$DIR/$f.astral-new" "$DIR/$f"; } || die "cannot write $DIR/$f"
   done <<<"$new_list"
-  chmod +x "$DIR/remielle-astral" 2>/dev/null
+  chmod +x "$DIR/sunbringer-astral" 2>/dev/null
   for f in "$DIR"/tools/*.sh "$DIR/tools/remielle-update" "$DIR/tools/build-official-patch"; do
     [ -f "$f" ] && chmod +x "$f"
   done
@@ -254,7 +254,7 @@ write_info() { # version tag source sha256
 # --------------------------------------------------------------- releases --
 releases_json() {
   local url="${REMIELLE_RELEASES_URL:-https://api.github.com/repos/$REPO/releases?per_page=30}"
-  curl -fsSL --retry 2 --connect-timeout 20 -A "Remielle-Astral-installer" \
+  curl -fsSL --retry 2 --connect-timeout 20 -A "Sunbringer-Astral-installer" \
     -H "Accept: application/vnd.github+json" "$url" 2>/dev/null
 }
 
@@ -263,7 +263,7 @@ releases_json() {
 launcher_assets() {
   grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*"' |
     sed 's/.*"\([a-z]*:\/\/[^"]*\)"$/\1/' |
-    grep -E "/remielle-astral-[^/]+-$PLATFORM\.zip$" |
+    grep -E "/sunbringer-astral-[^/]+-$PLATFORM\.zip$" |
     while IFS= read -r u; do t="${u%/*}"; printf '%s %s\n' "${t##*/}" "$u"; done
 }
 
@@ -274,21 +274,21 @@ resolve_release() {
   list="$(printf '%s' "$json" | launcher_assets)"
   if [ -n "$want_tag" ]; then
     line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print; exit }' <<<"$list")"
-    [ -n "$line" ] || line="v${want_tag#v} https://github.com/$REPO/releases/download/v${want_tag#v}/remielle-astral-${want_tag#v}-$PLATFORM.zip"
+    [ -n "$line" ] || line="v${want_tag#v} https://github.com/$REPO/releases/download/v${want_tag#v}/sunbringer-astral-${want_tag#v}-$PLATFORM.zip"
   else
     line="$(head -1 <<<"$list")"
     if [ -z "$line" ]; then
       if [ -z "$json" ]; then
         die "$(T "Could not reach the release list of $REPO (offline, or GitHub's hourly limit). Try again later, or use --version TAG or --zip FILE." "เข้าถึงรายการ release ของ $REPO ไม่ได้ (ออฟไลน์ หรือเกินโควตา GitHub ต่อชั่วโมง) ลองใหม่ภายหลัง หรือใช้ --version TAG / --zip FILE")"
       fi
-      die "$(T "No release of $REPO carries remielle-astral-*-$PLATFORM.zip yet." "ยังไม่มี release ของ $REPO ที่มี remielle-astral-*-$PLATFORM.zip")"
+      die "$(T "No release of $REPO carries sunbringer-astral-*-$PLATFORM.zip yet." "ยังไม่มี release ของ $REPO ที่มี sunbringer-astral-*-$PLATFORM.zip")"
     fi
   fi
   TAG="${line%% *}"
   URL="${line#* }"
   SUMS_URL="${URL%/*}/SHA256SUMS"
   ZIP_NAME="${URL##*/}"
-  NEW_VERSION="${ZIP_NAME#remielle-astral-}"
+  NEW_VERSION="${ZIP_NAME#sunbringer-astral-}"
   NEW_VERSION="${NEW_VERSION%-"$PLATFORM".zip}"
 }
 
@@ -349,14 +349,16 @@ check_optional() {
 
 # ------------------------------------------------------------ menu entries --
 setup_menu() {
-  local exe="$DIR/remielle-astral" entry="$APP_DIR/$APP_ID.desktop"
+  local exe="$DIR/sunbringer-astral" entry="$APP_DIR/$APP_ID.desktop"
   mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR"
-  if [ -e "$BIN_DIR/remielle-astral" ] && [ ! -L "$BIN_DIR/remielle-astral" ]; then
-    warn "$(T "Left $BIN_DIR/remielle-astral alone: it is a file, not a link." "ไม่แตะ $BIN_DIR/remielle-astral เพราะเป็นไฟล์จริง ไม่ใช่ลิงก์")"
+  if [ -e "$BIN_DIR/sunbringer-astral" ] && [ ! -L "$BIN_DIR/sunbringer-astral" ]; then
+    warn "$(T "Left $BIN_DIR/sunbringer-astral alone: it is a file, not a link." "ไม่แตะ $BIN_DIR/sunbringer-astral เพราะเป็นไฟล์จริง ไม่ใช่ลิงก์")"
   else
-    ln -sfn "$exe" "$BIN_DIR/remielle-astral" && ok "$BIN_DIR/remielle-astral"
+    ln -sfn "$exe" "$BIN_DIR/sunbringer-astral" && ok "$BIN_DIR/sunbringer-astral"
   fi
-  [ -f "$DIR/icon.png" ] && cp "$DIR/icon.png" "$ICON_DIR/$APP_ID.png"
+  # The 256 px copy for this theme size when the release has one.
+  if [ -f "$DIR/icon-256.png" ]; then cp "$DIR/icon-256.png" "$ICON_DIR/$APP_ID.png"
+  elif [ -f "$DIR/icon.png" ]; then cp "$DIR/icon.png" "$ICON_DIR/$APP_ID.png"; fi
   # An entry from a source build (zig build menu) points elsewhere: kept.
   if [ -f "$entry" ] && ! grep -qF -- "$DIR" "$entry"; then
     mkdir -p "$DIR/.remielle-cache/old-menu-entries"
@@ -368,15 +370,15 @@ setup_menu() {
   cat >"$entry" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Remielle Astral
+Name=Sunbringer Astral
 GenericName=Zenless Zone Zero Launcher
-Comment=Remielle (Zenless Zone Zero) server launcher
+Comment=Zenless Zone Zero private server launcher
 Exec="$exe"
 Path=$DIR
 Icon=$APP_ID
 Terminal=false
 Categories=Game;
-Keywords=game;zenless;zzz;remielle;astral;server;launcher;
+Keywords=game;zenless;zzz;sunbringer;astral;server;launcher;
 StartupWMClass=$APP_ID
 StartupNotify=true
 DESKTOP
@@ -396,11 +398,11 @@ DESKTOP
 offer_launch() {
   [ "$launch" = 1 ] || return 0
   [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || return 0
-  ask "$(T "Start Remielle Astral now?" "เปิด Remielle Astral เลยไหม?")" y || return 0
+  ask "$(T "Start Sunbringer Astral now?" "เปิด Sunbringer Astral เลยไหม?")" y || return 0
   # 9>&-: the child must not inherit the operation lock, or every later
   # install/uninstall reports "another install is running" while it lives.
-  (cd "$DIR" && setsid -f "$DIR/remielle-astral" >/dev/null 2>&1 </dev/null 9>&-) ||
-    (cd "$DIR" && nohup "$DIR/remielle-astral" >/dev/null 2>&1 </dev/null 9>&- &)
+  (cd "$DIR" && setsid -f "$DIR/sunbringer-astral" >/dev/null 2>&1 </dev/null 9>&-) ||
+    (cd "$DIR" && nohup "$DIR/sunbringer-astral" >/dev/null 2>&1 </dev/null 9>&- &)
 }
 
 # ------------------------------------------------------------------- modes --
@@ -408,7 +410,7 @@ do_check() {
   local have
   have="$(version_in "$DIR")"
   resolve_release
-  say "Remielle Astral"
+  say "Sunbringer Astral"
   note "$(T "Installed:" "ที่ติดตั้ง:") ${have:-$(T "not installed" "ยังไม่ได้ติดตั้ง")} ($DIR)"
   note "$(T "Newest:" "ใหม่สุด:") $NEW_VERSION ($TAG)"
   if [ -n "$have" ] && ver_gt "$NEW_VERSION" "$have"; then
@@ -420,7 +422,7 @@ do_check() {
 
 do_rollback() {
   local prev="$DIR/.remielle-cache/previous" v now copy
-  [ -f "$prev/remielle-astral" ] || die "$(T "There is no earlier version to put back." "ไม่มีรุ่นก่อนหน้าให้ย้อนกลับ")"
+  [ -f "$prev/sunbringer-astral" ] || die "$(T "There is no earlier version to put back." "ไม่มีรุ่นก่อนหน้าให้ย้อนกลับ")"
   v="$(version_in "$prev")"
   now="$(version_in "$DIR")"
   ask "$(T "Put back ${v:-the previous version} in place of ${now:-the installed one}?" "ย้อนกลับเป็น ${v:-รุ่นก่อนหน้า} แทน ${now:-รุ่นที่ติดตั้งอยู่} ไหม?")" y || return 0
@@ -440,19 +442,19 @@ do_install() {
     [ -f "$zip_file" ] || die "$zip_file does not exist"
     ZIP_NAME="$(basename "$zip_file")"
     case "$ZIP_NAME" in
-      remielle-astral-*-"$PLATFORM".zip) ;;
-      *) die "$(T "$ZIP_NAME is not a Remielle Astral zip for $PLATFORM." "$ZIP_NAME ไม่ใช่ zip ของ Remielle Astral สำหรับ $PLATFORM")" ;;
+      sunbringer-astral-*-"$PLATFORM".zip) ;;
+      *) die "$(T "$ZIP_NAME is not a Sunbringer Astral zip for $PLATFORM." "$ZIP_NAME ไม่ใช่ zip ของ Sunbringer Astral สำหรับ $PLATFORM")" ;;
     esac
     TAG=""
     URL="file://$(cd "$(dirname "$zip_file")" && pwd)/$ZIP_NAME"
-    NEW_VERSION="${ZIP_NAME#remielle-astral-}"
+    NEW_VERSION="${ZIP_NAME#sunbringer-astral-}"
     NEW_VERSION="${NEW_VERSION%-"$PLATFORM".zip}"
   else
     say "$(T "Looking up releases of $REPO" "ตรวจ release ของ $REPO")"
     resolve_release
   fi
 
-  if [ -z "$have" ] && [ -e "$DIR/remielle-astral" ]; then
+  if [ -z "$have" ] && [ -e "$DIR/sunbringer-astral" ]; then
     note "$(T "Installed: an older build  →  $NEW_VERSION" "ที่ติดตั้ง: รุ่นเก่า  →  $NEW_VERSION")"
   elif [ -n "$have" ]; then
     note "$(T "Installed:" "ที่ติดตั้ง:") $have  →  $NEW_VERSION"
@@ -500,14 +502,14 @@ do_install() {
   fi
 
   unzip -q -o "$zip" -d "$TMP/unpacked" || die "$(T "The zip could not be unpacked." "แตก zip ไม่ได้")"
-  root="$(find "$TMP/unpacked" -maxdepth 2 -type f -name remielle-astral -print -quit)"
-  [ -n "$root" ] || die "$(T "The zip holds no remielle-astral program." "ใน zip ไม่มีโปรแกรม remielle-astral")"
+  root="$(find "$TMP/unpacked" -maxdepth 2 -type f -name sunbringer-astral -print -quit)"
+  [ -n "$root" ] || die "$(T "The zip holds no sunbringer-astral program." "ใน zip ไม่มีโปรแกรม sunbringer-astral")"
   root="$(dirname "$root")"
-  is_elf "$root/remielle-astral" || die "$(T "remielle-astral in the zip is not a Linux program." "remielle-astral ใน zip ไม่ใช่โปรแกรม Linux")"
-  chmod +x "$root/remielle-astral"
+  is_elf "$root/sunbringer-astral" || die "$(T "sunbringer-astral in the zip is not a Linux program." "sunbringer-astral ใน zip ไม่ใช่โปรแกรม Linux")"
+  chmod +x "$root/sunbringer-astral"
   built="$(version_in "$root")"
   [ -n "$built" ] && NEW_VERSION="$built"
-  check_libraries "$root/remielle-astral"
+  check_libraries "$root/sunbringer-astral"
 
   stop_launcher
   say "$(T "Installing" "ติดตั้ง") $NEW_VERSION → $DIR"
@@ -519,7 +521,7 @@ do_install() {
   [ "$menu" = 1 ] && setup_menu
   check_optional
 
-  printf '\n%s%s%s\n' "$G$B" "$(T "Remielle Astral $NEW_VERSION is installed." "ติดตั้ง Remielle Astral $NEW_VERSION เรียบร้อย")" "$N"
+  printf '\n%s%s%s\n' "$G$B" "$(T "Sunbringer Astral $NEW_VERSION is installed." "ติดตั้ง Sunbringer Astral $NEW_VERSION เรียบร้อย")" "$N"
   printf '%s\n' "$(T "This is a demo build: if you find a bug, please report it on Discord (the link is in the launcher)." "รุ่นนี้ยังเป็นเดโม ถ้าเจอบัคแจ้งทาง Discord ได้เลย (ลิงก์อยู่ในลันเชอร์)")"
   offer_launch
 }
@@ -551,7 +553,7 @@ main() {
 
   { [ -n "${HOME:-}" ] && [ "$HOME" != "/" ]; } || die "HOME is not set"
   [ "$(uname -s)" = Linux ] || die "$(T "This installer is for Linux; on Windows use install.ps1." "ตัวติดตั้งนี้สำหรับ Linux บน Windows ใช้ install.ps1")"
-  [ "$(uname -m)" = x86_64 ] || die "$(T "Remielle Astral is built for x86_64 only (this is $(uname -m))." "Remielle Astral มีเฉพาะ x86_64 (เครื่องนี้เป็น $(uname -m))")"
+  [ "$(uname -m)" = x86_64 ] || die "$(T "Sunbringer Astral is built for x86_64 only (this is $(uname -m))." "Sunbringer Astral มีเฉพาะ x86_64 (เครื่องนี้เป็น $(uname -m))")"
   for tool in curl unzip sha256sum; do
     command -v "$tool" >/dev/null || die "$(T "$tool is needed; install it with your package manager." "ต้องมี $tool ติดตั้งด้วยตัวจัดการแพ็กเกจของ distro")"
   done
@@ -561,12 +563,12 @@ main() {
     # it read-only.  That is not a competing installer, so fall back to a
     # per-user lock in the real temporary directory before reporting busy.
     if ! { exec 9>"$LOCK_FILE"; } 2>/dev/null; then
-      LOCK_FILE="${TMPDIR:-/tmp}/remielle-astral-op-${UID:-$(id -u)}.lock"
+      LOCK_FILE="${TMPDIR:-/tmp}/sunbringer-astral-op-${UID:-$(id -u)}.lock"
       exec 9>"$LOCK_FILE" || die "$(T "Cannot create the installer lock file." "สร้างไฟล์ล็อกสำหรับติดตั้งไม่ได้")"
     fi
-    flock -n 9 || die "$(T "Another install or uninstall of Remielle Astral is running." "มีการติดตั้งหรือถอนการติดตั้ง Remielle Astral ทำงานอยู่แล้ว")"
+    flock -n 9 || die "$(T "Another install or uninstall of Sunbringer Astral is running." "มีการติดตั้งหรือถอนการติดตั้ง Sunbringer Astral ทำงานอยู่แล้ว")"
   fi
-  TMP="$(mktemp -d "${TMPDIR:-/tmp}/remielle-astral-install.XXXXXX")" || die "cannot create a temporary folder"
+  TMP="$(mktemp -d "${TMPDIR:-/tmp}/sunbringer-astral-install.XXXXXX")" || die "cannot create a temporary folder"
   trap 'rm -rf "$TMP"' EXIT
 
   case "$mode" in
