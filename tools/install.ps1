@@ -257,6 +257,26 @@ function Get-VersionKey([string]$V) {
     (($launcher -split '\.') | ForEach-Object { if ($_ -match '^\d+$') { $_.PadLeft(6, '0') } else { $_ } }) -join '.'
 }
 
+# Releases in the shape Resolve-Release reads, from the feed and the
+# SHA256SUMS files (no API): the newest release with a launcher zip.
+function Get-FeedReleases {
+    $h = @{ "User-Agent" = "Sunbringer-Astral-installer" }
+    try { $atom = (Invoke-WebRequest -Uri "https://github.com/$Repo/releases.atom" -Headers $h -UseBasicParsing).Content } catch { return @() }
+    foreach ($m in [regex]::Matches($atom, 'releases/tag/(v[^"]+)')) {
+        $tag = $m.Groups[1].Value
+        $base = "https://github.com/$Repo/releases/download/$tag"
+        try { $sums = (Invoke-WebRequest -Uri "$base/SHA256SUMS" -Headers $h -UseBasicParsing).Content } catch { continue }
+        if ($sums -is [byte[]]) { $sums = [Text.Encoding]::UTF8.GetString($sums) }
+        $assets = @($sums -split "`n" | ForEach-Object { ($_.Trim() -split '\s+', 2)[-1].TrimStart('*') } |
+            Where-Object { $_ -match "^sunbringer-astral-.+-$Platform\.zip$" -or $_ -eq "SHA256SUMS" } |
+            ForEach-Object { [pscustomobject]@{ name = $_; browser_download_url = "$base/$_" } })
+        if (-not ($assets | Where-Object { $_.name -ne "SHA256SUMS" })) { continue }
+        $assets += [pscustomobject]@{ name = "SHA256SUMS"; browser_download_url = "$base/SHA256SUMS" }
+        return ,@([pscustomobject]@{ tag_name = $tag; draft = $false; assets = $assets })
+    }
+    return @()
+}
+
 # The newest release (or the one tagged $Version) with a launcher zip for
 # Windows; releases that carry only the Custom server are passed over.
 function Resolve-Release {
@@ -265,7 +285,10 @@ function Resolve-Release {
     try {
         $releases = @(Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "Sunbringer-Astral-installer"; "Accept" = "application/vnd.github+json" })
     } catch {
-        if (-not $Version) {
+        # GitHub's API allows 60 requests an hour per address; the releases
+        # feed and each release's SHA256SUMS are not counted.
+        $releases = @(Get-FeedReleases)
+        if (-not $releases -and -not $Version) {
             Fail (T "Could not reach the release list of {0} (offline, or GitHub's hourly limit). Try again later, or use -Version TAG or -Zip FILE." "\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 release \u0e02\u0e2d\u0e07 {0} \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (\u0e2d\u0e2d\u0e1f\u0e44\u0e25\u0e19\u0e4c \u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e01\u0e34\u0e19\u0e42\u0e04\u0e27\u0e15\u0e32 GitHub) \u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e20\u0e32\u0e22\u0e2b\u0e25\u0e31\u0e07 \u0e2b\u0e23\u0e37\u0e2d\u0e43\u0e0a\u0e49 -Version / -Zip" $Repo)
         }
     }

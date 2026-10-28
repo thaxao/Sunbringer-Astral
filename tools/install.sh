@@ -268,6 +268,22 @@ launcher_assets() {
     while IFS= read -r u; do t="${u%/*}"; printf '%s %s\n' "${t##*/}" "$u"; done
 }
 
+# The same list without GitHub's API (60 requests an hour per address,
+# shared with every other program on the network): the releases feed gives
+# the tags newest first, and each release's SHA256SUMS names its zips.
+feed_assets() {
+  local tag
+  curl -fsSL --retry 2 --connect-timeout 20 -A "Sunbringer-Astral-installer" "https://github.com/$REPO/releases.atom" 2>/dev/null |
+    grep -o "releases/tag/[^\"]*" | sed "s|releases/tag/||" | grep "^v" |
+    while IFS= read -r tag; do
+      curl -fsSL --retry 2 --connect-timeout 20 "https://github.com/$REPO/releases/download/$tag/SHA256SUMS" 2>/dev/null |
+        awk "{print \$2}" | tr -d "*" | grep -E "^sunbringer-astral-[^/]+-$PLATFORM\\.zip$" |
+        while IFS= read -r z; do printf "%s %s\n" "$tag" "https://github.com/$REPO/releases/download/$tag/$z"; done
+      # The newest release with a launcher zip is enough.
+      [ -n "$(curl -fsSL "https://github.com/$REPO/releases/download/$tag/SHA256SUMS" 2>/dev/null | grep -E "sunbringer-astral-[^ ]+-$PLATFORM\\.zip")" ] && break
+    done
+}
+
 # The line of release $1 whose zip has the highest version (sort -V).
 newest_in_release() {
   awk -v t="$1" '$1 == t' |
@@ -280,6 +296,7 @@ resolve_release() {
   local json list line
   json="$(releases_json)" || json=""
   list="$(printf '%s' "$json" | launcher_assets)"
+  [ -n "$list" ] || list="$(feed_assets)"
   if [ -n "$want_tag" ]; then
     line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print; exit }' <<<"$list")"
     [ -n "$line" ] || line="v${want_tag#v} https://github.com/$REPO/releases/download/v${want_tag#v}/sunbringer-astral-${want_tag#v}-$PLATFORM.zip"
