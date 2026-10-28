@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+    line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print $1; exit }' <<<"$list")"
+    [ -n "$line" ] && line="$(newest_in_release "$line" <<<"$list")"#!/usr/bin/env bash
 # Sunbringer Astral installer for Linux.
 #
 #   curl -fsSL https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/install.sh | bash
@@ -267,6 +268,13 @@ launcher_assets() {
     while IFS= read -r u; do t="${u%/*}"; printf '%s %s\n' "${t##*/}" "$u"; done
 }
 
+# The line of release $1 whose zip has the highest version (sort -V).
+newest_in_release() {
+  awk -v t="$1" '$1 == t' |
+    while IFS= read -r l; do v="${l##*/sunbringer-astral-}"; printf '%s\t%s\n' "${v%-"$PLATFORM".zip}" "$l"; done |
+    sort -V -k1,1 | tail -1 | cut -f2-
+}
+
 # Sets TAG, URL, SUMS_URL, ZIP_NAME and NEW_VERSION.
 resolve_release() {
   local json list line
@@ -276,7 +284,9 @@ resolve_release() {
     line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print; exit }' <<<"$list")"
     [ -n "$line" ] || line="v${want_tag#v} https://github.com/$REPO/releases/download/v${want_tag#v}/sunbringer-astral-${want_tag#v}-$PLATFORM.zip"
   else
-    line="$(head -1 <<<"$list")"
+    # A release holds its sub-versions side by side (1.5.1 and 1.5.2 in
+    # v1.5.b3.4.1): take the newest release, then its highest version.
+    line="$(newest_in_release "$(head -1 <<<"$list" | cut -d" " -f1)" <<<"$list")"
     if [ -z "$line" ]; then
       if [ -z "$json" ]; then
         die "$(T "Could not reach the release list of $REPO (offline, or GitHub's hourly limit). Try again later, or use --version TAG or --zip FILE." "เข้าถึงรายการ release ของ $REPO ไม่ได้ (ออฟไลน์ หรือเกินโควตา GitHub ต่อชั่วโมง) ลองใหม่ภายหลัง หรือใช้ --version TAG / --zip FILE")"

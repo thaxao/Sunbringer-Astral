@@ -250,6 +250,13 @@ function Write-Info([string]$V, [string]$Tag, [string]$Source) {
 }
 
 # --------------------------------------------------------------- releases --
+# A sortable key for "1.5.2.b3.4.1": the launcher part, numbers padded,
+# before the ".b" game part.
+function Get-VersionKey([string]$V) {
+    $launcher = ($V -split '\.b', 2)[0]
+    (($launcher -split '\.') | ForEach-Object { if ($_ -match '^\d+$') { $_.PadLeft(6, '0') } else { $_ } }) -join '.'
+}
+
 # The newest release (or the one tagged $Version) with a launcher zip for
 # Windows; releases that carry only the Custom server are passed over.
 function Resolve-Release {
@@ -266,7 +273,11 @@ function Resolve-Release {
     foreach ($r in ($releases | ForEach-Object { $_ })) {
         if ($r.draft) { continue }
         if ($want -and (($r.tag_name -replace '^[vV]', '') -ne $want)) { continue }
-        $zip = $r.assets | Where-Object { $_.name -match "^sunbringer-astral-.+-$Platform\.zip$" } | Select-Object -First 1
+        # A release holds its sub-versions side by side (1.5.1 and 1.5.2 in
+        # v1.5.b3.4.1): take the zip with the highest version.
+        $zip = $r.assets | Where-Object { $_.name -match "^sunbringer-astral-.+-$Platform\.zip$" } |
+            Sort-Object { Get-VersionKey (($_.name -replace '^sunbringer-astral-', '') -replace "-$Platform\.zip$", '') } |
+            Select-Object -Last 1
         if (-not $zip) { continue }
         $sums = $r.assets | Where-Object { $_.name -eq "SHA256SUMS" } | Select-Object -First 1
         return [pscustomobject]@{
