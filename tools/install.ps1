@@ -220,23 +220,8 @@ function Install-From([string]$From) {
         }
         $kept = @(Get-Tree $stage | Where-Object { $_ -ne "MANIFEST" }) + "MANIFEST" | Sort-Object -Unique
         Set-Content -LiteralPath (Join-Path $stage "MANIFEST") -Value $kept -Encoding ASCII
-        if (-not (Get-ExeIn $stage)) { Fail "previous backup is incomplete" }
-
-        $displaced = ""
-        if (Test-Path -LiteralPath $prev) {
-            $displaced = "$prev.old.$([Guid]::NewGuid().ToString('N'))"
-            Move-Item -LiteralPath $prev -Destination $displaced -ErrorAction Stop
-        }
-        try {
-            Move-Item -LiteralPath $stage -Destination $prev -ErrorAction Stop
-        } catch {
-            if ($displaced) {
-                if (Test-Path -LiteralPath $prev) { Remove-Item -LiteralPath $prev -Recurse -Force }
-                Move-Item -LiteralPath $displaced -Destination $prev -ErrorAction Stop
-            }
-            throw
-        }
-        if ($displaced) { Remove-Item -LiteralPath $displaced -Recurse -Force -ErrorAction Stop }
+        if (Test-Path -LiteralPath $prev) { Remove-Item -LiteralPath $prev -Recurse -Force }
+        Move-Item -LiteralPath $stage -Destination $prev
         foreach ($f in $oldList) {
             if ($newList -notcontains $f) {
                 $p = Join-Path $Dir $f
@@ -261,16 +246,7 @@ function Install-From([string]$From) {
 
 function Write-Info([string]$V, [string]$Tag, [string]$Source) {
     $lines = @("version=$V", "tag=$Tag", "source=$Source", "sha256=$($script:Sha)", "installed_at=$((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))")
-    $path = Join-Path $Dir ".install-info"
-    $temp = Join-Path $Dir (".install-info.new." + [Guid]::NewGuid().ToString("N"))
-    $text = ($lines -join [Environment]::NewLine) + [Environment]::NewLine
-    try {
-        [IO.File]::WriteAllText($temp, $text, [Text.Encoding]::ASCII)
-        if ([IO.File]::Exists($path)) { [IO.File]::Replace($temp, $path, $null) }
-        else { [IO.File]::Move($temp, $path) }
-    } finally {
-        if ([IO.File]::Exists($temp)) { [IO.File]::Delete($temp) }
-    }
+    Set-Content -LiteralPath (Join-Path $Dir ".install-info") -Value $lines -Encoding ASCII
 }
 
 # --------------------------------------------------------------- releases --
