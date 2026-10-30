@@ -632,6 +632,7 @@ main() {
   esac
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+# Piped through bash (curl | bash) there is no BASH_SOURCE; run main then too.
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
   main "$@"
 fi
