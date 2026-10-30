@@ -1,5 +1,4 @@
-    line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print $1; exit }' <<<"$list")"
-    [ -n "$line" ] && line="$(newest_in_release "$line" <<<"$list")"#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Sunbringer Astral installer for Linux.
 #
 #   curl -fsSL https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/install.sh | bash
@@ -206,22 +205,46 @@ stop_launcher() {
 # .remielle-cache/previous for --rollback, and files the old version had and
 # the new one does not are removed.  Everything else in $DIR stays.
 install_from() {
-  local from="$1" prev="$DIR/.remielle-cache/previous" f new_list old_list
+  local from="$1" prev="$DIR/.remielle-cache/previous" prev_stage="$DIR/.remielle-cache/previous.new" f new_list old_list displaced suffix=0
   mkdir -p "$DIR" || die "cannot create $DIR"
-  [ -f "$from/MANIFEST" ] || { list_tree "$from"; echo MANIFEST; } | LC_ALL=C sort >"$from/MANIFEST.new"
-  [ -f "$from/MANIFEST.new" ] && mv "$from/MANIFEST.new" "$from/MANIFEST"
+  if [ ! -f "$from/MANIFEST" ]; then
+    { list_tree "$from"; echo MANIFEST; } | LC_ALL=C sort >"$from/MANIFEST.new" || die "cannot write $from/MANIFEST"
+    mv -f "$from/MANIFEST.new" "$from/MANIFEST" || die "cannot promote $from/MANIFEST"
+  fi
   new_list="$(program_files "$from")"
 
   if [ -e "$DIR/sunbringer-astral" ]; then
     old_list="$(program_files "$DIR")"
-    rm -rf "$prev.new" && mkdir -p "$prev.new"
+    rm -rf "$prev_stage" || die "cannot clear $prev_stage"
+    mkdir -p "$prev_stage" || die "cannot create $prev_stage"
     while IFS= read -r f; do
       [ -f "$DIR/$f" ] || continue
-      mkdir -p "$prev.new/$(dirname "$f")" && cp -p "$DIR/$f" "$prev.new/$f"
+      mkdir -p "$prev_stage/$(dirname "$f")" || die "cannot stage previous $f"
+      cp -p "$DIR/$f" "$prev_stage/$f" || die "cannot back up $DIR/$f"
     done <<<"$old_list"
-    { list_tree "$prev.new" | grep -vx MANIFEST; echo MANIFEST; } | LC_ALL=C sort >"$prev.new/MANIFEST.new"
-    mv "$prev.new/MANIFEST.new" "$prev.new/MANIFEST"
-    rm -rf "$prev" && mv "$prev.new" "$prev"
+    { list_tree "$prev_stage" | grep -vx MANIFEST; echo MANIFEST; } | LC_ALL=C sort >"$prev_stage/MANIFEST.new" || die "cannot write previous MANIFEST"
+    mv -f "$prev_stage/MANIFEST.new" "$prev_stage/MANIFEST" || die "cannot promote previous MANIFEST"
+    [ -f "$prev_stage/sunbringer-astral" ] || die "previous backup is incomplete"
+
+    displaced="$prev.old.$$"
+    while [ -e "$displaced" ] || [ -L "$displaced" ]; do
+      suffix=$((suffix + 1))
+      displaced="$prev.old.$$.$suffix"
+    done
+    if [ -e "$prev" ] || [ -L "$prev" ]; then
+      mv "$prev" "$displaced" || die "cannot preserve existing previous backup"
+    else
+      displaced=""
+    fi
+    if ! mv "$prev_stage" "$prev"; then
+      if [ -n "$displaced" ]; then
+        mv "$displaced" "$prev" || die "cannot restore previous backup from $displaced"
+      fi
+      die "cannot promote complete previous backup"
+    fi
+    if [ -n "$displaced" ]; then
+      rm -rf "$displaced" || die "cannot remove superseded previous backup"
+    fi
     while IFS= read -r f; do
       [ -n "$f" ] || continue
       grep -qxF -- "$f" <<<"$new_list" || rm -f "$DIR/$f"
@@ -243,13 +266,15 @@ install_from() {
 }
 
 write_info() { # version tag source sha256
+  local tmp="$DIR/.install-info.new.$$"
   {
     echo "version=$1"
     echo "tag=$2"
     echo "source=$3"
     echo "sha256=$4"
     echo "installed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  } >"$DIR/.install-info"
+  } >"$tmp" || { rm -f "$tmp"; return 1; }
+  mv -f "$tmp" "$DIR/.install-info" || { rm -f "$tmp"; return 1; }
 }
 
 # --------------------------------------------------------------- releases --
@@ -298,7 +323,9 @@ resolve_release() {
   list="$(printf '%s' "$json" | launcher_assets)"
   [ -n "$list" ] || list="$(feed_assets)"
   if [ -n "$want_tag" ]; then
-    line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print; exit }' <<<"$list")"
+    line="$(awk -v a="$want_tag" -v b="${want_tag#v}" '$1 == a || $1 == b || $1 == "v" b { print $1; exit }' <<<"$list")"
+    # A tag holds several sub-versions; take its highest one.
+    [ -n "$line" ] && line="$(newest_in_release "$line" <<<"$list")"
     [ -n "$line" ] || line="v${want_tag#v} https://github.com/$REPO/releases/download/v${want_tag#v}/sunbringer-astral-${want_tag#v}-$PLATFORM.zip"
   else
     # A release holds its sub-versions side by side (1.5.1 and 1.5.2 in
@@ -457,7 +484,7 @@ do_rollback() {
   copy="$TMP/previous"
   cp -a "$prev" "$copy" || die "cannot copy $prev"
   install_from "$copy"
-  write_info "${v:-unknown}" "" "rollback" ""
+  write_info "${v:-unknown}" "" "rollback" "" || die "cannot write .install-info"
   ok "$(T "Rolled back to ${v:-the previous version}; --rollback again undoes it." "ย้อนกลับเป็น ${v:-รุ่นก่อนหน้า} แล้ว รัน --rollback อีกครั้งเพื่อกลับ")"
 }
 
@@ -541,7 +568,7 @@ do_install() {
   stop_launcher
   say "$(T "Installing" "ติดตั้ง") $NEW_VERSION → $DIR"
   install_from "$root"
-  write_info "$NEW_VERSION" "$TAG" "$URL" "$SHA"
+  write_info "$NEW_VERSION" "$TAG" "$URL" "$SHA" || die "cannot write .install-info"
   ok "$(T "Program files replaced; settings, saves and mods kept" "แทนที่ไฟล์โปรแกรมแล้ว การตั้งค่า เซฟ และม็อดยังอยู่ครบ")"
   [ -d "$DIR/.remielle-cache/previous" ] && note "$(T "The replaced version is kept for: install.sh --rollback" "เก็บรุ่นเดิมไว้สำหรับ: install.sh --rollback")"
 
@@ -605,4 +632,6 @@ main() {
   esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
