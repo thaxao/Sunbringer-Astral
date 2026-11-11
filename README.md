@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/thaxao/Sunbringer-Astral/releases"><img src="https://img.shields.io/github/v/release/thaxao/Sunbringer-Astral?include_prereleases&label=release&color=F7A41D" alt="Release"></a>
-  <img src="https://img.shields.io/badge/game-CNBetaWin3.4.1-blue" alt="Game version">
+  <img src="https://img.shields.io/badge/game-CNBetaWin3.4.3-blue" alt="Game version">
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-green" alt="Platform">
   <img src="https://img.shields.io/badge/license-Apache--2.0-orange" alt="License">
 </p>
@@ -89,7 +89,7 @@ irm https://raw.githubusercontent.com/thaxao/Sunbringer-Astral/main/tools/instal
 |---|---|
 | **Launcher** | เปิดเกมและ server ในปุ่มเดียว, ติดตั้งและอัปเดตตัวเกมด้วย diff (hdiff / ZIFF), ตรวจและซ่อมไฟล์เกม |
 | **บัญชีและทีม** | แก้ Agent, W-Engine, Drive Disc, Bangboo และทีมแบบ real-time ระหว่างเล่น, บันทึก Shiyu Defense และ Deadly Assault, สำรองเซฟอัตโนมัติ |
-| **Custom Server** | server สำเร็จรูปสำหรับ Linux และ Windows อัปเดตจากลันเชอร์หรือคำสั่งได้ |
+| **Custom Server** | server สำเร็จรูปสำหรับ Linux และ Windows อัปเดตจากลันเชอร์หรือคำสั่งได้<br>**ใหม่ใน e1.5.7:** เริ่มการต่อสู้ Shiyu Defense ใหม่จากเมนูหยุดในเกม, หน้าจอจบการต่อสู้แสดงส่วนร่วมของแต่ละเอเจนต์, สติกเกอร์ ฟิลเตอร์ กรอบ และท่าทางในโหมดถ่ายรูป |
 | **Client Patch** | `sunbringer.exe` + `sunbringer.dll` ลันเชอร์ติดตั้งและตรวจ hash ให้เอง |
 | **Damage Meter** | ตัวนับดาเมจวาดในเกม: ดาเมจและ DPS ของแต่ละตัว, กราฟดาเมจตามเวลา<br>**Insert** เปิดเมนู ลากหรือปรับหน้าต่างได้ · **Insert / Esc** กลับเข้าเกม · **Home** ซ่อนแผง<br>อัปเดตแยกจาก [Sunbringer-Meter](https://github.com/thaxao/Sunbringer-Meter) |
 | **Mods** | จัดการ ZZMI mods |

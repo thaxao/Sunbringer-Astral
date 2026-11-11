@@ -7,9 +7,9 @@
 
 pkgname=sunbringer-astral-bin
 _pkgname=sunbringer-astral
-pkgver=1.5.2.b3.4.1
-_ver=1.5.2.b3.4.1
-_tag=v1.5.b3.4.1
+pkgver=1.5.10.b3.4.3
+_ver=1.5.10.b3.4.3
+_tag=v1.5.b3.4.3
 pkgrel=1
 pkgdesc="Launcher for Zenless Zone Zero private servers: servers, account editor, mods"
 arch=('x86_64')
@@ -23,7 +23,7 @@ conflicts=("$_pkgname" "$_pkgname-git")
 options=('!strip' '!debug')
 install=sunbringer-astral-bin.install
 source=("$_pkgname-$_ver-linux-x86_64.zip::$url/releases/download/$_tag/$_pkgname-$_ver-linux-x86_64.zip")
-sha256sums=('54f4e6fb11c54cd9cdb5c78ee8ea17e8752bf312ce597c39c05e0b6ecf95cfd9')
+sha256sums=('7d938f67debcd53c29ae476bf70df09403112a312c7c3e394b9b246777c47627')
 
 package() {
   cd "$_pkgname-$_ver-linux-x86_64"
